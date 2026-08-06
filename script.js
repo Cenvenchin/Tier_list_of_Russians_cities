@@ -1,7 +1,6 @@
 const CITIES = [
   { id: "sankt-peterburg", name: "Санкт-Петербург", image: "assets/images/cities/sankt-peterburg.jpg" },
-  { id: "kaliningrad", name: "Калининград", image: "assets/images/cities/kaliningrad.jpg" },
-  { id: "kaliningrad2", name: "Калининград", image: "assets/images/cities/kaliningrad2.jpg" },
+  { id: "kaliningrad", name: "Калининград", image: "assets/images/cities/kaliningrad2.jpg" },
   { id: "vyborg", name: "Выборг", image: "assets/images/cities/vyborg.jpg" },
   { id: "baltiysk", name: "Балтийск", image: "assets/images/cities/baltiysk.jpg" },
   { id: "yantarny", name: "Янтарный", image: "assets/images/cities/yantarny.jpg" },
@@ -10,7 +9,10 @@ const CITIES = [
   { id: "nizhniy-novgorod", name: "Нижний Новгород", image: "assets/images/cities/nizhniy-novgorod.jpg" },
   { id: "tula", name: "Тула", image: "assets/images/cities/tula.jpg" },
   { id: "ryazan", name: "Рязань", image: "assets/images/cities/ryazan.jpg" },
+  { id: "grodno", name: "Гродно", image: "assets/images/cities/grodno.jpg" },
 ];
+
+const DRAG_THRESHOLD = 4;
 
 const tierBoard = document.getElementById("tierBoard");
 const tierOverlay = document.getElementById("tierOverlay");
@@ -47,74 +49,134 @@ function onPointerDown(event) {
   event.preventDefault();
 
   const rect = card.getBoundingClientRect();
-  const offsetX = event.clientX - rect.left;
-  const offsetY = event.clientY - rect.top;
 
   activeDrag = {
     card,
-    offsetX,
-    offsetY,
+    offsetX: event.clientX - rect.left,
+    offsetY: event.clientY - rect.top,
+    startX: event.clientX,
+    startY: event.clientY,
     wasOnBoard: card.classList.contains("is-on-board"),
+    isDragging: false,
+    pointerId: event.pointerId,
+    rafId: null,
+    pendingX: 0,
+    pendingY: 0,
   };
 
-  card.classList.add("is-dragging");
   card.setPointerCapture(event.pointerId);
-
-  if (!activeDrag.wasOnBoard) {
-    moveCardToBoard(card, rect.left, rect.top);
-  }
-
   card.addEventListener("pointermove", onPointerMove);
   card.addEventListener("pointerup", onPointerUp);
   card.addEventListener("pointercancel", onPointerUp);
 }
 
 function onPointerMove(event) {
+  if (!activeDrag || event.pointerId !== activeDrag.pointerId) return;
+
+  const dx = event.clientX - activeDrag.startX;
+  const dy = event.clientY - activeDrag.startY;
+
+  if (!activeDrag.isDragging) {
+    if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+    beginDrag();
+  }
+
+  activeDrag.pendingX = event.clientX - activeDrag.offsetX;
+  activeDrag.pendingY = event.clientY - activeDrag.offsetY;
+
+  if (!activeDrag.rafId) {
+    activeDrag.rafId = requestAnimationFrame(updateDragPosition);
+  }
+}
+
+function updateDragPosition() {
   if (!activeDrag) return;
 
-  const { card, offsetX, offsetY } = activeDrag;
-  const boardRect = tierBoard.getBoundingClientRect();
+  activeDrag.rafId = null;
+  const { card, pendingX, pendingY } = activeDrag;
+  card.style.left = `${pendingX}px`;
+  card.style.top = `${pendingY}px`;
+}
 
-  const x = event.clientX - boardRect.left - offsetX;
-  const y = event.clientY - boardRect.top - offsetY;
+function beginDrag() {
+  const { card } = activeDrag;
+  const rect = card.getBoundingClientRect();
 
-  card.style.left = `${x}px`;
-  card.style.top = `${y}px`;
+  activeDrag.isDragging = true;
+
+  document.body.appendChild(card);
+  card.classList.add("is-dragging", "is-floating");
+
+  card.style.width = `${rect.width}px`;
+  card.style.height = `${rect.height}px`;
+  card.style.left = `${rect.left}px`;
+  card.style.top = `${rect.top}px`;
 }
 
 function onPointerUp(event) {
-  if (!activeDrag) return;
+  if (!activeDrag || event.pointerId !== activeDrag.pointerId) return;
 
-  const { card } = activeDrag;
-  card.classList.remove("is-dragging");
+  const { card, isDragging, wasOnBoard, rafId } = activeDrag;
+
+  if (rafId) {
+    cancelAnimationFrame(rafId);
+  }
+
   card.releasePointerCapture(event.pointerId);
-
   card.removeEventListener("pointermove", onPointerMove);
   card.removeEventListener("pointerup", onPointerUp);
   card.removeEventListener("pointercancel", onPointerUp);
 
-  if (isOverPool(event.clientX, event.clientY)) {
-    returnCardToPool(card);
+  card.classList.remove("is-dragging", "is-floating");
+
+  if (isDragging) {
+    if (isOverTierBoard(event.clientX, event.clientY)) {
+      placeOnBoard(card, event.clientX, event.clientY);
+    } else if (isOverPool(event.clientX, event.clientY) || !wasOnBoard) {
+      returnCardToPool(card);
+    } else {
+      placeOnBoard(card, event.clientX, event.clientY);
+    }
   }
 
   activeDrag = null;
 }
 
-function moveCardToBoard(card, screenLeft, screenTop) {
+function placeOnBoard(card, clientX, clientY) {
   const boardRect = tierBoard.getBoundingClientRect();
+  const { offsetX, offsetY } = activeDrag;
 
   card.classList.add("is-on-board");
-  tierOverlay.appendChild(card);
+  clearFloatingStyles(card);
+  card.style.left = `${clientX - boardRect.left - offsetX}px`;
+  card.style.top = `${clientY - boardRect.top - offsetY}px`;
 
-  card.style.left = `${screenLeft - boardRect.left}px`;
-  card.style.top = `${screenTop - boardRect.top}px`;
+  tierOverlay.appendChild(card);
 }
 
 function returnCardToPool(card) {
   card.classList.remove("is-on-board");
+  clearFloatingStyles(card);
+  cityPoolGrid.appendChild(card);
+}
+
+function clearFloatingStyles(card) {
+  card.style.width = "";
+  card.style.height = "";
   card.style.left = "";
   card.style.top = "";
-  cityPoolGrid.appendChild(card);
+  card.style.transform = "";
+  card.style.zIndex = "";
+}
+
+function isOverTierBoard(clientX, clientY) {
+  const rect = tierBoard.getBoundingClientRect();
+  return (
+    clientX >= rect.left &&
+    clientX <= rect.right &&
+    clientY >= rect.top &&
+    clientY <= rect.bottom
+  );
 }
 
 function isOverPool(clientX, clientY) {

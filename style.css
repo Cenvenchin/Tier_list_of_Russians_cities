@@ -9,58 +9,66 @@
   --bg-panel: #353535;
   --text: #f0f0f0;
   --text-muted: #bdbdbd;
-  --accent: #ff8a65;
-  --card-width: 112px;
+  --tier-row-count: 6;
+  --tier-board-width: min(100%, 820px);
+  --tier-board-height: calc(var(--tier-board-width) * 1082 / 1816);
+  --tier-row-height: calc(var(--tier-board-height) / var(--tier-row-count));
+  --card-width: calc(var(--tier-row-height) * 1.45);
+  --page-padding-x: 12px;
+  --page-padding-y: 12px;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 html,
 body {
   margin: 0;
   min-height: 100%;
+  min-height: 100dvh;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.4;
+  line-height: 1.35;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .page {
-  max-width: 1200px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 24px 16px 40px;
+  padding: var(--page-padding-y) var(--page-padding-x) max(16px, env(safe-area-inset-bottom));
 }
 
 .header {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .header h1 {
-  margin: 0 0 8px;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-}
-
-.subtitle {
   margin: 0;
-  color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .main {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 .tier-board {
   position: relative;
-  width: 100%;
+  width: var(--tier-board-width);
+  margin-inline: auto;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   user-select: none;
   touch-action: none;
 }
@@ -79,14 +87,14 @@ body {
 
 .city-pool {
   background: var(--bg-panel);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 10px;
+  padding: 10px 12px 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .city-pool__title {
-  margin: 0 0 12px;
-  font-size: 1rem;
+  margin: 0 0 8px;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -96,31 +104,49 @@ body {
 .city-pool__grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  min-height: 140px;
+  gap: 8px;
   align-content: flex-start;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .city-card {
+  position: relative;
+  flex: 0 0 var(--card-width);
   width: var(--card-width);
+  min-width: var(--card-width);
+  max-width: var(--card-width);
+  height: var(--tier-row-height);
+  min-height: var(--tier-row-height);
+  max-height: var(--tier-row-height);
+  aspect-ratio: 1.45 / 1;
   cursor: grab;
-  border-radius: 8px;
+  border-radius: 7px;
   overflow: hidden;
   background: #1a1a1a;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  transition: box-shadow 0.15s ease;
   touch-action: none;
+  -webkit-touch-callout: none;
+  contain: layout size style;
 }
 
 .city-card:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.5);
 }
 
 .city-card.is-dragging {
   cursor: grabbing;
   z-index: 1000;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
-  transform: scale(1.04);
+  transition: none;
+  will-change: left, top;
+}
+
+.city-card.is-floating {
+  position: fixed;
+  margin: 0;
+  z-index: 1000;
 }
 
 .city-card.is-on-board {
@@ -129,35 +155,73 @@ body {
 }
 
 .city-card__photo {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  height: 84px;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: cover;
+  object-position: center;
   pointer-events: none;
 }
 
 .city-card__name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
   margin: 0;
-  padding: 6px 8px;
-  font-size: 0.72rem;
+  padding: 3px 4px;
+  font-size: clamp(0.5rem, 2.2vw, 0.62rem);
   font-weight: 600;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.15;
   color: var(--text);
-  background: rgba(0, 0, 0, 0.55);
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
   pointer-events: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
   :root {
-    --card-width: 96px;
+    --tier-board-width: 100%;
+    --page-padding-x: 8px;
+    --page-padding-y: 8px;
   }
 
-  .city-card__photo {
-    height: 72px;
+  .header {
+    margin-bottom: 8px;
   }
 
-  .page {
-    padding-top: 16px;
+  .main {
+    gap: 8px;
+  }
+
+  .city-pool {
+    padding: 8px 10px 10px;
+  }
+
+  .city-pool__grid {
+    gap: 6px;
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  :root {
+    --tier-board-width: min(100%, 520px);
+    --page-padding-y: 6px;
+  }
+
+  .header {
+    margin-bottom: 6px;
+  }
+
+  .header h1 {
+    font-size: 1rem;
   }
 }
