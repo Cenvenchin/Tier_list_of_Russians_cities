@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тир-лист городов России</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <h1>Тир-лист городов России</h1>
+      <p class="subtitle">Перетащи города на тир-лист, расставь как считаешь нужным и отправь скрин автору</p>
+    </header>
+
+    <main class="main">
+      <section class="tier-board" id="tierBoard" aria-label="Тир-лист">
+        <img
+          class="tier-board__bg"
+          src="assets/images/tier-list.png"
+          alt="Тир-лист S A B C D E"
+          width="1816"
+          height="1082"
+          draggable="false"
+        >
+        <div class="tier-board__overlay" id="tierOverlay"></div>
+      </section>
+
+      <section class="city-pool" id="cityPool" aria-label="Города для расстановки">
+        <h2 class="city-pool__title">Города</h2>
+        <div class="city-pool__grid" id="cityPoolGrid"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="cityCardTemplate">
+    <article class="city-card" draggable="false">
+      <img class="city-card__photo" alt="" draggable="false">
+      <p class="city-card__name"></p>
+    </article>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>

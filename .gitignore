@@ -1,0 +1,28 @@
+# Переменные окружения и секреты
+.env
+.env.*
+.env.local
+*.local
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Редакторы
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Логи и кэш
+*.log
+npm-debug.log*
+.cache/
+
+# Исходные фото в корне (в репозитории используются копии из assets/)
+/*.jpg
+/*.png
+
+# Пустые/устаревшие файлы
+Tier_list_of_Russians_cities.html
